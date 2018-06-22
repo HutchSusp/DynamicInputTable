@@ -1,7 +1,9 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -12,50 +14,111 @@ namespace DynamicTable
     {
         [Bindable(true)]
         [Category("Appearance")]
-        [DefaultValue(5)]
         [Localizable(true)]
-        public int Columns { get; set; } = 5;
+        public int Columns {
+            get {
+                int? c = (int?)ViewState["Columns_" + ID];
+                return c ?? 0;
+            }
+            set {
+                ViewState["Columns_" + ID] = value;
+            }
+        }
 
         [Bindable(true)]
         [Category("Appearance")]
-        [DefaultValue(5)]
         [Localizable(true)]
-        public int InitialRows { get; set; } = 5;
+        public int InitialRows {
+            get {
+                int? ir = (int?)ViewState["InitialRows_" + ID];
+                return ir ?? 0;
+            }
+            set {
+                ViewState["InitialRows_" + ID] = value;
+            }
+        }
+
+        [Bindable(false)]
+        [Category("Appearance")]
+        protected int CurrentRows {
+            get {
+                int? cr = (int?)ViewState["CurrentRows_" + ID];
+                return cr ?? InitialRows;
+            }
+            set {
+                ViewState["CurrentRows_" + ID] = value;
+            }
+        }
 
         [Bindable(true)]
         [Category("Appearance")]
-        [DefaultValue("Column 1;Column 2;Column 3;Column 4;Column 5")]
         [Localizable(true)]
-        public string HeaderRow { get; set; } = "Column 1;Column 2;Column 3;Column 4;Column 5";
+        public string HeaderRow {
+            get {
+                string hr = (string)ViewState["HeaderRow_" + ID];
+                return hr ?? string.Empty;
+            }
+            set {
+                ViewState["HeaderRow_" + ID] = value;
+            }
+        }
 
         [Bindable(true)]
         [Category("Appearance")]
-        [DefaultValue("SingleLine;SingleLine;SingleLine;SingleLine;SingleLine")]
         [Localizable(true)]
-        public string ColumnFormat { get; set; } = "SingleLine;SingleLine;SingleLine;SingleLine;SingleLine";
+        public string ColumnFormat {
+            get {
+                string cf = (string)ViewState["ColumnFormat_" + ID];
+                return cf ?? string.Empty;
+            }
+            set {
+                ViewState["ColumnFormat_" + ID] = value;
+            }
+        }
 
         [Bindable(true)]
         [Category("Appeaerance")]
-        [DefaultValue(typeof(Color), "0xFFFFFF")]
         [Localizable(true)]
-        public Color RowColor { get; set; } = Color.White;
+        public Color RowColor {
+            get {
+                Color? rc = (Color?)ViewState["RowColor_" + ID];
+                return rc ?? Color.White;
+            }
+            set {
+                ViewState["RowColor_" + ID] = value;
+            }
+        }
 
         [Bindable(true)]
         [Category("Appearance")]
-        [DefaultValue(typeof(Color), "0xFFFFFF")]
         [Localizable(true)]
-        public Color RowAlternatingColor { get; set; } = Color.White;
+        public Color RowAlternatingColor {
+            get {
+                Color? arc = (Color?)ViewState["RowAlternatingColor_" + ID];
+                return arc ?? Color.White;
+            }
+            set {
+                ViewState["RowAlternatingColor_" + ID] = value;
+            }
+        }
 
         [Bindable(true)]
         [Category("Appearance")]
-        [DefaultValue(typeof(Color), "0xFFFFFF")]
         [Localizable(true)]
-        public Color HeaderRowColor { get; set; } = Color.White;
+        public Color HeaderRowColor {
+            get {
+                Color? hrc = (Color?)ViewState["HeaderRowColor_" + ID];
+                return hrc ?? Color.White;
+            }
+            set {
+                ViewState["HeaderRowColor_" + ID] = value;
+            }
+        }
 
         public void InsertRow(int numrows = 1) {
-            if (numrows < 1)
+            if (numrows < 0)
                 throw new Exception("Invalid number of rows to be generated");
-            else if (ColumnFormat.Split(';').Count() != Columns)
+            else if (ColumnFormat.Split(';').Count() != Columns && !string.IsNullOrEmpty(ColumnFormat))
                 throw new Exception("Invalid ColumnFormat for the number of Columns");
             else {
                 for (int i = 0; i < numrows; i++) {
@@ -66,6 +129,7 @@ namespace DynamicTable
                     row.Style.Add(HtmlTextWriterStyle.BackgroundColor, (rowindex % 2 == 0 ? RowColor.ToString() : RowAlternatingColor.ToString()));
                     Rows.Add(row);
                 }
+                CurrentRows += numrows;
                 DataBind();
             }
         }
@@ -142,8 +206,8 @@ namespace DynamicTable
 
         protected void GenerateHeaderRow() {
             string[] headerarr = HeaderRow.Split(';');
-            if (headerarr.Count() != Columns)
-                throw new Exception("");
+            if (headerarr.Count() != Columns && !string.IsNullOrEmpty(HeaderRow))
+                throw new Exception("Invalid Header Row for ammount of Columns");
             else {
                 TableHeaderRow row = new TableHeaderRow();
                 for (int i = 0; i < Columns; i++)
@@ -164,9 +228,11 @@ namespace DynamicTable
             base.Dispose();
         }
 
-        public DynamicTable() {
+        public DynamicTable() : base() {
             GenerateHeaderRow();
-            InsertRow(InitialRows);
+            InsertRow(CurrentRows);
         }
+
+        
     }
 }
