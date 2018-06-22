@@ -70,6 +70,16 @@ namespace DynamicTable
             }
         }
 
+        // Returns 2D array in the form of [row, column]
+        // This method skips the header row
+        public string[,] GetTableInput() {
+            string[,] input = new string[Rows.Count, Columns];
+            for (int r = 1; r < Rows.Count; r++)
+                for (int c = 0; c < Columns; c++)
+                    input[r, c] = (FindControl("Box_" + r + "_" + c) as TextBox).Text;
+            return input;
+        }
+
         protected TextBoxMode FormatTextBox(string formatstring, int columnindex) {
             switch (formatstring) {
                 case "Color":
