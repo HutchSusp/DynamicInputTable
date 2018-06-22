@@ -62,7 +62,7 @@ namespace DynamicTable
                     int rowindex = Rows.Count - 1;
                     TableRow row = new TableRow();
                     for (int j = 0; j < Columns; j++)
-                        row.Cells.Add(GenerateCell(i, j));
+                        row.Cells.Add(GenerateCell(rowindex, j));
                     row.Style.Add(HtmlTextWriterStyle.BackgroundColor, (rowindex % 2 == 0 ? RowColor.ToString() : RowAlternatingColor.ToString()));
                     Rows.Add(row);
                 }
