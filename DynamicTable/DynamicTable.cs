@@ -6,6 +6,7 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using System.Text;
 
 namespace DynamicTable
 {
@@ -15,104 +16,95 @@ namespace DynamicTable
         [Bindable(true)]
         [Category("Appearance")]
         [Localizable(true)]
-        public int Columns {
-            get {
-                int? c = (int?)ViewState["Columns_" + ID];
-                return c ?? 0;
-            }
-            set {
-                ViewState["Columns_" + ID] = value;
-            }
-        }
+        public int Columns { get; set; }
 
         [Bindable(true)]
         [Category("Appearance")]
         [Localizable(true)]
-        public int InitialRows {
-            get {
-                int? ir = (int?)ViewState["InitialRows_" + ID];
-                return ir ?? 0;
-            }
-            set {
-                ViewState["InitialRows_" + ID] = value;
-            }
-        }
+        public int InitialRows { get; set; }
 
         [Bindable(false)]
         [Category("Appearance")]
-        protected int CurrentRows {
-            get {
-                int? cr = (int?)ViewState["CurrentRows_" + ID];
-                return cr ?? InitialRows;
-            }
-            set {
-                ViewState["CurrentRows_" + ID] = value;
-            }
-        }
+        protected int CurrentRows { get; set; }
 
         [Bindable(true)]
         [Category("Appearance")]
         [Localizable(true)]
-        public string HeaderRow {
-            get {
-                string hr = (string)ViewState["HeaderRow_" + ID];
-                return hr ?? string.Empty;
-            }
-            set {
-                ViewState["HeaderRow_" + ID] = value;
-            }
-        }
+        public string HeaderRow { get; set; }
 
         [Bindable(true)]
         [Category("Appearance")]
         [Localizable(true)]
-        public string ColumnFormat {
-            get {
-                string cf = (string)ViewState["ColumnFormat_" + ID];
-                return cf ?? string.Empty;
-            }
-            set {
-                ViewState["ColumnFormat_" + ID] = value;
-            }
-        }
+        public string ColumnFormat { get; set; }
 
         [Bindable(true)]
         [Category("Appeaerance")]
         [Localizable(true)]
-        public Color RowColor {
-            get {
-                Color? rc = (Color?)ViewState["RowColor_" + ID];
-                return rc ?? Color.White;
-            }
-            set {
-                ViewState["RowColor_" + ID] = value;
-            }
-        }
+        public Color RowColor { get; set; }
 
         [Bindable(true)]
         [Category("Appearance")]
         [Localizable(true)]
-        public Color RowAlternatingColor {
-            get {
-                Color? arc = (Color?)ViewState["RowAlternatingColor_" + ID];
-                return arc ?? Color.White;
-            }
-            set {
-                ViewState["RowAlternatingColor_" + ID] = value;
-            }
-        }
+        public Color RowAlternatingColor { get; set; }
 
         [Bindable(true)]
         [Category("Appearance")]
         [Localizable(true)]
-        public Color HeaderRowColor {
-            get {
-                Color? hrc = (Color?)ViewState["HeaderRowColor_" + ID];
-                return hrc ?? Color.White;
+        public Color HeaderRowColor { get; set; }
+
+        protected override object SaveViewState() {
+            ViewState["Columns_DynamicTable_" + ID] = Columns;
+            ViewState["InitialRows_DynamicTable_" + ID] = InitialRows;
+            ViewState["CurrentRows_DynamicTable_" + ID] = CurrentRows;
+            ViewState["HeaderRow_DynamicTable_" + ID] = HeaderRow;
+            ViewState["ColumnFormat_DynamicTable_" + ID] = ColumnFormat;
+            ViewState["RowColor_DynamicTable_" + ID] = RowColor;
+            ViewState["RowAlternatingColor_DynamicTable_" + ID] = RowAlternatingColor;
+            ViewState["HeaderRowColor_DynamicTable_" + ID] = HeaderRowColor;
+            ViewState["CellInput_DynamicTable_" + ID] = ExportCellInput();
+
+            return base.SaveViewState();
+        }
+
+        protected override void LoadViewState(object savedState) {
+            base.LoadViewState(savedState);
+
+            Columns = (int)ViewState["Columns_DynamicTable_" + ID];
+            InitialRows = (int)ViewState["InitialRows_DynamicTable_" + ID];
+            CurrentRows = (int)ViewState["CurrentRows_DynamicTable_" + ID];
+            HeaderRow = ViewState["HeaderRow_DynamicTable_" + ID] as string;
+            ColumnFormat = ViewState["ColumnFormat_DynamicTable_" + ID] as string;
+            RowColor = (Color)ViewState["RowColor_DynamicTable_" + ID];
+            RowAlternatingColor = (Color)ViewState["RowAlternatingColor_DynamicTable_" + ID];
+            HeaderRowColor = (Color)ViewState["HeaderRowColor_DynamicTable_" + ID];
+
+            GenerateHeaderRow();
+            InsertRow((CurrentRows == 0 ? InitialRows : CurrentRows));
+            ImportCellInput(ViewState["CellInput_DynamicTable_" + ID] as string);
+        }
+
+        protected string ExportCellInput() {
+            StringBuilder export = new StringBuilder();
+            for (int r = 0; r == CurrentRows; r++) {
+                for (int c = 0; c == Columns; c++)
+                    export.Append((FindControl("Box_" + r + "_" + c) as TextBox).Text.Replace("$", "&dollar&").Replace("@", "&at&") + "$");
+                if (export.Length > 0)
+                    export.Length--;
+                export.Append("@");
             }
-            set {
-                ViewState["HeaderRowColor_" + ID] = value;
+            return export.ToString();
+        }
+
+        protected void ImportCellInput(string input) {
+            string[] rows = input.Split('@');
+            try {
+                for (int r = 0; r < CurrentRows; r++) {
+                    string[] cells = rows[r].Split('$');
+                    for (int c = 0; c < Columns; c++)
+                        (FindControl("Box_" + r + "_" + c) as TextBox).Text = cells[c].Replace("&dollar&", "$").Replace("&at&", "@");
+                }
             }
+            catch { }
         }
 
         public void InsertRow(int numrows = 1) {
@@ -129,7 +121,7 @@ namespace DynamicTable
                     row.Style.Add(HtmlTextWriterStyle.BackgroundColor, (rowindex % 2 == 0 ? RowColor.ToString() : RowAlternatingColor.ToString()));
                     Rows.Add(row);
                 }
-                CurrentRows += numrows;
+                CurrentRows = Rows.Count - 1;
                 DataBind();
             }
         }
@@ -220,19 +212,9 @@ namespace DynamicTable
 
         public void ResetTable() {
             Rows.Clear();
+            CurrentRows = 0;
             GenerateHeaderRow();
             InsertRow(InitialRows);
         }
-
-        public override void Dispose() {
-            base.Dispose();
-        }
-
-        public DynamicTable() : base() {
-            GenerateHeaderRow();
-            InsertRow(CurrentRows);
-        }
-
-        
     }
 }
